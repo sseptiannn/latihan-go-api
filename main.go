@@ -54,6 +54,7 @@ func handleRequests() {
 	myRouter.HandleFunc("/api/products", createProduct).Methods("POST")
 	myRouter.HandleFunc("/api/products", getProducts).Methods("GET")
 	myRouter.HandleFunc("/api/products/{id}", getProductByID).Methods("GET")
+	myRouter.HandleFunc("/api/products/{id}", updateProductByID).Methods("PUT")
 
 	log.Fatal(http.ListenAndServe(":9999", myRouter))
 }
@@ -65,13 +66,17 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 func createProduct(w http.ResponseWriter, r *http.Request) {
 	// fmt.Fprint(w, "ini create product")
 
+	// baca seluruh isi bodynya
 	payloads, _ := ioutil.ReadAll(r.Body)
 
+	// deklarasi var utk nampung data product yg mau di insert
 	var product Product
 	json.Unmarshal(payloads, &product)
 
+	// insert data
 	db.Create(&product)
 
+	// respon nya
 	res := Result{Code: 200, Data: product, Message: "Succcess create product"}
 	result, err := json.Marshal(res)
 
@@ -119,4 +124,36 @@ func getProductByID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(resultOne)
+}
+
+func updateProductByID(w http.ResponseWriter, r *http.Request) {
+	// get ID product nya
+	vars := mux.Vars(r)
+	productID := vars["id"]
+
+	// baca smua data body nya
+	payloads, _ := ioutil.ReadAll(r.Body)
+
+	//tampung data product yg mau di update
+	var productUpdate Product
+	json.Unmarshal(payloads, &productUpdate)
+
+	// get data product by ID S
+	var product Product
+	db.First(&product, productID)
+
+	// update datanya
+	db.Model(&product).Updates(productUpdate)
+
+	res := Result{Code: 200, Data: product, Message: "Succcess update product"}
+	result, err := json.Marshal(res)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(result)
+
 }
