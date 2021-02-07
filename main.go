@@ -51,7 +51,9 @@ func handleRequests() {
 	myRouter := mux.NewRouter().StrictSlash(true)
 
 	myRouter.HandleFunc("/", homePage)
-	myRouter.HandleFunc("/api/products", creareProduct).Methods("POST")
+	myRouter.HandleFunc("/api/products", createProduct).Methods("POST")
+	myRouter.HandleFunc("/api/products", getProducts).Methods("GET")
+	myRouter.HandleFunc("/api/products/{id}", getProductByID).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":9999", myRouter))
 }
@@ -60,7 +62,7 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Welcome Oppa!")
 }
 
-func creareProduct(w http.ResponseWriter, r *http.Request) {
+func createProduct(w http.ResponseWriter, r *http.Request) {
 	// fmt.Fprint(w, "ini create product")
 
 	payloads, _ := ioutil.ReadAll(r.Body)
@@ -81,4 +83,40 @@ func creareProduct(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(result)
 
+}
+
+func getProducts(w http.ResponseWriter, r *http.Request) {
+	products := []Product{}
+
+	db.Find(&products)
+
+	res := Result{Code: 200, Data: products, Message: "Success get products"}
+	results, err := json.Marshal(res)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(results)
+}
+
+func getProductByID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	productID := vars["id"]
+
+	var product Product
+	db.First(&product, productID)
+
+	res := Result{Code: 200, Data: product, Message: "Success get products"}
+	resultOne, err := json.Marshal(res)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(resultOne)
 }
