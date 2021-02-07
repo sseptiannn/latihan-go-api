@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -59,5 +61,24 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func creareProduct(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "ini create product")
+	// fmt.Fprint(w, "ini create product")
+
+	payloads, _ := ioutil.ReadAll(r.Body)
+
+	var product Product
+	json.Unmarshal(payloads, &product)
+
+	db.Create(&product)
+
+	res := Result{Code: 200, Data: product, Message: "Succcess create product"}
+	result, err := json.Marshal(res)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(result)
+
 }
